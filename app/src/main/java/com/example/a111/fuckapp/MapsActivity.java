@@ -49,8 +49,9 @@ import com.google.gson.Gson;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener,GoogleMap.OnMarkerClickListener,
-        LocationListener,GoogleMap.OnMarkerDragListener,
+        GoogleApiClient.OnConnectionFailedListener,
+      //  GoogleMap.OnMarkerClickListener,
+        LocationListener,
         GpsStatus.Listener {
 
     final Context context = this;
@@ -59,7 +60,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     GoogleApiClient mGoogleApiClient;
     final int CODE_FOR_FILE_SAVING = 44; // documentation says we need this for some security reasons or whatever
     Location mLastLocation;
-    Marker mCurrLocationMarker;
     LocationRequest mLocationRequest;
     EditText result;
     MappingSession session = new MappingSession(context);
@@ -124,6 +124,59 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public void mapCurrentLocation(View view){
+        if ( ! this.isLabellingActive) {
+            return;
+        }
+        LayoutInflater li = LayoutInflater.from(context);
+        View promptsView = li.inflate(R.layout.prompts, null);
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                context);
+
+        // set prompts.xml to alertdialog builder
+        alertDialogBuilder.setView(promptsView);
+
+        final EditText userInput = (EditText) promptsView.findViewById(R.id.editTextDialogUserInput);
+
+
+        final LatLng currentPos = new LatLng(this.mLastLocation.getLatitude(),this.mLastLocation.getLongitude());
+        final MappingPoint point = new MappingPoint(currentPos, nSatellites);
+        final Marker m = mMap.addMarker(point.toMarkerOptions()); //add .draggable(true) makes the marker draggable
+        m.showInfoWindow();
+
+        // set dialog message
+        alertDialogBuilder
+                .setCancelable(false)
+                .setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                // get user input and set it to result
+                                // edit text
+
+                                String new_note = currentPos.toString() + " " + userInput.getText() + "\n";
+                                result.append(new_note);
+                                point.setPointTitle((userInput.getText()).toString());
+                                session.addPoint(point);
+                            }
+                        })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.cancel();
+                                m.remove();
+                            }
+                        });
+
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+
+        // show it
+        alertDialog.show();
+
+    }
+
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -137,7 +190,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-        mMap.setOnMarkerDragListener(this);
+     //   mMap.setOnMarkerDragListener(this);
 
 
         //Initialize Google Play Services
@@ -152,6 +205,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
+       /*
         googleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(final LatLng arg0) {
@@ -174,13 +228,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     final EditText userInput = (EditText) promptsView.findViewById(R.id.editTextDialogUserInput);
 
-                    /* Replacement Code with MappingSession and MappingPoint is below
+                    Replacement Code with MappingSession and MappingPoint is below
                     final List<MarkerOptions> markers = new ArrayList<MarkerOptions>();
                     MarkerOptions markerOptions= new MarkerOptions().position(arg0).title((userInput.getText()).toString());
                     Marker m= mMap.addMarker(markerOptions);
                     m.showInfoWindow();
                     markers.add(markerOptions);
-                    */
+
 
                     final MappingPoint point = new MappingPoint(arg0, nSatellites);
                     final Marker m = mMap.addMarker(point.toMarkerOptions()); //add .draggable(true) makes the marker draggable
@@ -217,7 +271,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 }
             }
-        });
+        }); */
         session.ApplySessiontoMap(mMap); //adds the Session to the map
     }
 
@@ -242,8 +296,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 == PackageManager.PERMISSION_GRANTED) {
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
         }
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
 
     }
+
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -253,21 +310,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
-        if (mCurrLocationMarker != null) {
+       /* if (mCurrLocationMarker != null) {
             mCurrLocationMarker.remove();
         }
 
 
         //Place current location marker
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        MarkerOptions markerOptions = new MarkerOptions().draggable(true);
+        markerOptions = new MarkerOptions().draggable(true);
+        markerOptions.title("Current Position: " + latLng.toString());
         markerOptions.position(latLng);
-        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
-        mCurrLocationMarker = mMap.addMarker(markerOptions);
-        mCurrLocationMarker.showInfoWindow();
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));*/
+     /*   mCurrLocationMarker = mMap.addMarker(markerOptions);
+        mCurrLocationMarker.showInfoWindow();*/
 
         //move map camera
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude())));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(30));
 
 
@@ -280,7 +338,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public boolean onMarkerClick(Marker marker) {
+  /*  public boolean onMarkerClick(Marker marker) {
         return true;
     }
 
@@ -291,6 +349,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.d(getClass().getSimpleName(), String.format("Drag from %f:%f",
                 position.latitude,
                 position.longitude));
+        marker.setTitle("Current Position: " + position.toString());
+
     }
 
     @Override
@@ -300,20 +360,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.d(getClass().getSimpleName(),
                 String.format("Dragging to %f:%f", position.latitude,
                         position.longitude));
-    }
+        marker.setTitle("Current Position: " + position.toString());
 
+    }*/
+/*
     @Override
     public void onMarkerDragEnd(Marker marker) {
         LatLng position = marker.getPosition();
 
         mCurrLocationMarker.showInfoWindow();
+        markerOptions.title("Current Position: " + position.toString());
+        marker.setTitle("Current Position: " + position.toString());
+
 
         Log.d(getClass().getSimpleName(), String.format("Dragged to %f:%f",
                 position.latitude,
                 position.longitude));
     }
 
-
+*/
 
     /** Called when the user touches the button */
     public void toggleMapLabellingSession(View view) {
@@ -323,7 +388,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     /** Called when the user touches the "Back" button */
 
     public void toSessionsOverview(View view){
-        session.ExportSession(this); //just example butten for the export
+        session.ExportSession(this); //just example button for the export
+        result.setText("");
     }
 
     @Override
