@@ -15,8 +15,14 @@ android:orientation="vertical" >
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:onClick="toggleMapLabellingSession"
-            android:text="Turn On/Off Map Labelling Session" />
-
+            android:text="Turn On/Off Map Labelling" />
+        <Button
+            android:id="@+id/button5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="mapCurrentLocation"
+            android:text="map point" />
         <Button
             android:id="@+id/button4"
             android:layout_width="wrap_content"
